@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { FileText, ArrowRight, Shield, Zap, BarChart3, Sparkles } from "lucide-react";
 
 interface AuthFormProps {
-  onSuccess: () => void;
+  onSuccess: (mode: "signup" | "signin") => void;
 }
 
 const features = [
@@ -30,11 +30,11 @@ const AuthForm = ({ onSuccess }: AuthFormProps) => {
     if (isSignUp) {
       if (!name.trim()) { setError("Please enter your name."); return; }
       const result = signUp(name.trim(), email.trim(), password);
-      if (result.success) onSuccess();
+      if (result.success) onSuccess("signup");
       else setError(result.error || "Sign up failed.");
     } else {
       const result = signIn(email.trim(), password);
-      if (result.success) onSuccess();
+      if (result.success) onSuccess("signin");
       else setError(result.error || "Sign in failed.");
     }
   };

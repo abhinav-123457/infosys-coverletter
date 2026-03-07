@@ -20,12 +20,13 @@ import { FileText, ArrowRight, ArrowLeft, LogOut, Sparkles, Check, HelpCircle } 
 interface GeneratorProps {
   user: User;
   onLogout: () => void;
+  forceTourOnLoad?: boolean;
 }
 
 const getTutorialKey = (email: string) => `resumeforge_tutorial_seen:${email.toLowerCase()}`;
 const getTourKey = (email: string) => `resumeforge_tour_seen:${email.toLowerCase()}`;
 
-const Generator = ({ user, onLogout }: GeneratorProps) => {
+const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) => {
   const [step, setStep] = useState(0);
   const [resumeText, setResumeText] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -44,6 +45,12 @@ const Generator = ({ user, onLogout }: GeneratorProps) => {
     const tutorialSeen = localStorage.getItem(tutorialKey) === "true";
     const tourSeen = localStorage.getItem(tourKey) === "true";
 
+    if (forceTourOnLoad && !tourSeen) {
+      setShowTutorial(false);
+      setShowTour(true);
+      return;
+    }
+
     if (!tutorialSeen) {
       setShowTutorial(true);
       return;
@@ -52,7 +59,7 @@ const Generator = ({ user, onLogout }: GeneratorProps) => {
     if (!tourSeen) {
       setShowTour(true);
     }
-  }, [tutorialKey, tourKey]);
+  }, [forceTourOnLoad, tutorialKey, tourKey]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);

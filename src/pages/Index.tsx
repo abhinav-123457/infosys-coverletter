@@ -6,6 +6,7 @@ import Generator from "@/pages/Generator";
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forceTourOnLoad, setForceTourOnLoad] = useState(false);
 
   useEffect(() => {
     const sessionUser = getSession();
@@ -13,13 +14,15 @@ const Index = () => {
     setLoading(false);
   }, []); // only on mount
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (mode: "signup" | "signin") => {
     const newUser = getSession();
     setUser(newUser);
+    setForceTourOnLoad(mode === "signup");
   };
 
   const handleLogout = () => {
     setUser(null);
+    setForceTourOnLoad(false);
   };
 
   if (loading) {
@@ -34,7 +37,7 @@ const Index = () => {
     return <AuthForm onSuccess={handleAuthSuccess} />;
   }
 
-  return <Generator user={user} onLogout={handleLogout} />;
+  return <Generator user={user} onLogout={handleLogout} forceTourOnLoad={forceTourOnLoad} />;
 };
 
 export default Index;
