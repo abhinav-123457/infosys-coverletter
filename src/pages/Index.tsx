@@ -8,12 +8,14 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUser(getSession());
+    const sessionUser = getSession();
+    setUser(sessionUser);
     setLoading(false);
-  }, []);
+  }, []); // only on mount
 
   const handleAuthSuccess = () => {
-    setUser(getSession());
+    const newUser = getSession();
+    setUser(newUser);
   };
 
   const handleLogout = () => {

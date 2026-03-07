@@ -22,8 +22,8 @@ interface GeneratorProps {
   onLogout: () => void;
 }
 
-const TUTORIAL_KEY = "resumeforge_tutorial_seen";
-const TOUR_KEY = "resumeforge_tour_seen";
+const getTutorialKey = (email: string) => `resumeforge_tutorial_seen:${email.toLowerCase()}`;
+const getTourKey = (email: string) => `resumeforge_tour_seen:${email.toLowerCase()}`;
 
 const Generator = ({ user, onLogout }: GeneratorProps) => {
   const [step, setStep] = useState(0);
@@ -37,24 +37,34 @@ const Generator = ({ user, onLogout }: GeneratorProps) => {
   const [templateId, setTemplateId] = useState("professional");
   const [showTutorial, setShowTutorial] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const tutorialKey = getTutorialKey(user.email);
+  const tourKey = getTourKey(user.email);
 
   useEffect(() => {
-    if (!localStorage.getItem(TUTORIAL_KEY)) {
+    const tutorialSeen = localStorage.getItem(tutorialKey) === "true";
+    const tourSeen = localStorage.getItem(tourKey) === "true";
+
+    if (!tutorialSeen) {
       setShowTutorial(true);
+      return;
     }
-  }, []);
+
+    if (!tourSeen) {
+      setShowTour(true);
+    }
+  }, [tutorialKey, tourKey]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
-    localStorage.setItem(TUTORIAL_KEY, "true");
-    if (!localStorage.getItem(TOUR_KEY)) {
+    localStorage.setItem(tutorialKey, "true");
+    if (localStorage.getItem(tourKey) !== "true") {
       setTimeout(() => setShowTour(true), 400);
     }
   };
 
   const handleTourComplete = () => {
     setShowTour(false);
-    localStorage.setItem(TOUR_KEY, "true");
+    localStorage.setItem(tourKey, "true");
   };
 
   const steps = ["Resume", "Job Details", "Analysis", "Template", "Cover Letter"];
