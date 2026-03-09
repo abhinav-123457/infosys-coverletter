@@ -162,3 +162,4 @@ The application follows a clean architecture with:
 ## 📄 License
 
 This project is licensed under the MIT License.
+
