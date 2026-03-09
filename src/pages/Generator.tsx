@@ -7,6 +7,7 @@ import { signOut, User } from "@/lib/auth";
 import { parseResumeText, ParsedResume } from "@/lib/resumeParser";
 import { extractJobSkills, matchSkills, MatchResult } from "@/lib/skillMatcher";
 import { generateCoverLetter } from "@/lib/coverLetterGenerator";
+import { polishCoverLetter } from "@/lib/coverLetterPolisher";
 import ResumeUpload from "@/components/ResumeUpload";
 import SkillAnalysis from "@/components/SkillAnalysis";
 import CoverLetterPreview from "@/components/CoverLetterPreview";
@@ -35,6 +36,8 @@ const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) 
   const [parsedResume, setParsedResume] = useState<ParsedResume | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [polishError, setPolishError] = useState<string | null>(null);
   const [templateId, setTemplateId] = useState("professional");
   const [showTutorial, setShowTutorial] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -85,9 +88,11 @@ const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) 
     setStep(2);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!parsedResume || !matchResult) return;
-    const letter = generateCoverLetter({
+    
+    // Generate the initial cover letter using templates
+    const draftLetter = generateCoverLetter({
       resume: parsedResume,
       jobTitle,
       companyName,
@@ -95,8 +100,30 @@ const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) 
       matchResult,
       templateId,
     });
-    setCoverLetter(letter);
+    
+    setCoverLetter(draftLetter);
     setStep(4);
+    setPolishError(null);
+    
+    // Attempt to polish the cover letter with LLM
+    try {
+      setIsPolishing(true);
+      const result = await polishCoverLetter({
+        draftLetter,
+        jobDescription,
+        resumeSkills: parsedResume.skills
+      });
+      
+      if (result.success && result.polishedLetter !== draftLetter) {
+        setCoverLetter(result.polishedLetter);
+      } else if (result.error) {
+        setPolishError(result.error);
+      }
+    } catch (error) {
+      setPolishError('Polishing failed');
+    } finally {
+      setIsPolishing(false);
+    }
   };
 
   const handleLogout = () => {
@@ -260,6 +287,34 @@ const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) 
         {/* Step 4: Cover Letter Preview (no scoring) */}
         {step === 4 && coverLetter && (
           <div className="max-w-4xl mx-auto">
+            {/* Polishing Status */}
+            {isPolishing && (
+              <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Polishing your cover letter with AI...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {polishError && (
+              <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-3">
+                  <div className="w-4 h-4 rounded-full bg-amber-500 mt-0.5"></div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      AI polishing unavailable
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      {polishError}. Using template-generated version.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <CoverLetterPreview content={coverLetter} onEdit={setCoverLetter} />
 
             <div className="mt-10 flex flex-col sm:flex-row justify-between gap-4">
@@ -278,6 +333,8 @@ const Generator = ({ user, onLogout, forceTourOnLoad = false }: GeneratorProps) 
                   setMatchResult(null);
                   setCoverLetter("");
                   setTemplateId("professional");
+                  setIsPolishing(false);
+                  setPolishError(null);
                 }}
               >
                 Start New Letter
